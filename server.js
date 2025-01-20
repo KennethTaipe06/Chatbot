@@ -5,7 +5,6 @@ const cors = require('cors');
 const swaggerUi = require('swagger-ui-express');
 const swaggerJsdoc = require('swagger-jsdoc');
 const { GoogleGenerativeAI } = require("@google/generative-ai");
-const session = require('express-session');
 const redis = require('redis');
 const jwt = require('jsonwebtoken');
 
@@ -36,12 +35,6 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 // Middleware
 app.use(bodyParser.json());
 app.use(cors());
-app.use(session({
-    secret: process.env.SESSION_SECRET,
-    resave: false,
-    saveUninitialized: true,
-    cookie: { secure: false }
-}));
 
 const redisClient = redis.createClient({
     host: process.env.REDIS_HOST,
@@ -145,20 +138,25 @@ app.post('/chatbot', async (req, res) => {
 
             console.log('Token JWT verificado:', decoded);
 
-            if (!req.session.conversationHistory) {
-                req.session.conversationHistory = [];
-            }
+            // Obtener historial de conversación del usuario desde Redis
+            let conversationHistory = await redisClient.get(`history_${userId}`);
+            conversationHistory = conversationHistory ? JSON.parse(conversationHistory) : [];
 
-            req.session.conversationHistory.push({ sender: 'user', message: message });
+            // Agregar el mensaje del usuario al historial de conversación
+            conversationHistory.push({ sender: 'user', message: message });
 
             try {
                 const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro-latest" });
-                const prompt = req.session.conversationHistory.map(entry => `${entry.sender}: ${entry.message}`).join('\n');
+                const prompt = conversationHistory.map(entry => `${entry.sender}: ${entry.message}`).join('\n');
                 console.log('Prompt generado:', prompt);
                 const result = await model.generateContent(prompt);
                 const botMessage = await result.response.text();
 
-                req.session.conversationHistory.push({ sender: 'bot', message: botMessage });
+                // Agregar el mensaje del bot al historial de conversación
+                conversationHistory.push({ sender: 'bot', message: botMessage });
+
+                // Guardar el historial de conversación actualizado en Redis
+                await redisClient.set(`history_${userId}`, JSON.stringify(conversationHistory));
 
                 console.log('Respuesta del bot:', botMessage);
 
