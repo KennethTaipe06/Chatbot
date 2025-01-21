@@ -146,7 +146,7 @@ app.post('/chatbot', async (req, res) => {
             conversationHistory.push({ sender: 'user', message: message });
 
             try {
-                const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro-latest" });
+                const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
                 const prompt = conversationHistory.map(entry => `${entry.sender}: ${entry.message}`).join('\n');
                 console.log('Prompt generado:', prompt);
                 const result = await model.generateContent(prompt);
