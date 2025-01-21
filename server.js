@@ -9,7 +9,7 @@ const redis = require('redis');
 const jwt = require('jsonwebtoken');
 
 const app = express();
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || 3090;
 
 // Configuración de Swagger
 const swaggerOptions = {
