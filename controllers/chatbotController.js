@@ -50,8 +50,8 @@ async function handleChatbotRequest(req, res, redisClient) {
                 // Agregar el mensaje del bot al historial de conversación
                 conversationHistory.push({ sender: 'bot', message: botMessage });
 
-                // Guardar el historial de conversación actualizado en Redis
-                await redisClient.set(`history_${userId}`, JSON.stringify(conversationHistory));
+                // Guardar el historial de conversación actualizado en Redis con una duración máxima de una hora
+                await redisClient.set(`history_${userId}`, JSON.stringify(conversationHistory), 'EX', 3600);
 
                 console.log('Respuesta del bot:', botMessage);
 
